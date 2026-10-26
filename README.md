@@ -7,18 +7,24 @@ Lokale Web-App fuer Physiotherapie-Praxen. Behandlungsgespraeche aufnehmen, tran
 - **Live-Aufnahme** mit Mikrofon, Pegel-Anzeige und Echtzeit-Transkript-Vorschau
 - **Datei-Upload** per Drag & Drop (MP3, WAV, M4A, OGG, WEBM)
 - **3-Schritt-Pipeline**: Transkription → Fachbegriff-Korrektur → strukturierte Zusammenfassung
-- **Ergebnis-Ansicht** mit 3 Tabs (Zusammenfassung, korrigiertes Transkript, Roh-Transkript)
-- **Inline-Editing** der Zusammenfassung direkt im Browser
+- **Dokumentationstyp** umschaltbar: Befundung oder Verlaufsdoku (eigener Prompt je Typ)
+- **Ergebnis-Ansicht** mit 3 Tabs (Zusammenfassung, korrigiertes Transkript, Roh-Transkript), Zusammenfassung als Markdown gerendert
+- **Inline-Editing** der Zusammenfassung und des korrigierten Transkripts direkt im Browser
+- **Kopieren** pro Tab in die Zwischenablage und **PDF-Export** des Ergebnisses
+- **Assistent**: Chat mit dem LLM (Streaming-Antworten, Vorschlags-Prompts)
+- **Verlauf**: Archiv aller Ergebnisse mit Liste, Volltextsuche, Detailansicht und Loeschen
+- **Session-Persistenz**: laufende Verarbeitung bleibt nach einem Seiten-Reload erhalten
 - **Offline-Entwicklung** mit Mock-Services (`USE_MOCKS=true`)
 
 ## Tech Stack
 
 | Komponente | Technologie |
 |---|---|
-| Frontend | React 19, TypeScript, Vite, Tailwind CSS |
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS, react-markdown |
 | Backend | FastAPI (Python), uvicorn |
-| STT | Faster-Whisper (OpenAI-kompatible API) |
+| STT | Faster-Whisper (OpenAI-kompatible API, `/v1/audio/transcriptions`) |
 | LLM | Ollama mit Qwen3.5:9b |
+| PDF | fpdf2 |
 | Speicher | JSON-Dateien (kein Datenbank-Setup noetig) |
 
 ## Voraussetzungen
@@ -64,8 +70,20 @@ cd frontend
 npm run dev
 ```
 
-Frontend: http://localhost:5173
+Frontend: http://localhost:5173 (Vite leitet `/api` an das Backend auf Port 8080 weiter)
 Backend-API: http://localhost:8080/docs
+
+## Docker
+
+Das `Dockerfile` baut das Frontend und liefert es zusammen mit dem Backend aus einem Container aus (FastAPI serviert `static/`, wenn vorhanden):
+
+```bash
+docker compose up -d --build
+```
+
+App: http://localhost:8080
+
+Uploads und Ergebnisse liegen in den Volumes `physiodoc-uploads` und `physiodoc-data`. `LLM_MODEL`, `UPLOAD_DIR`, `DATA_DIR` und `USE_MOCKS` sind in `docker-compose.yml` fest gesetzt; `WHISPER_API_URL` und `OLLAMA_API_URL` werden aus der `.env` gelesen (siehe unten).
 
 ## Entwicklung mit Mocks
 
@@ -108,8 +126,15 @@ Mit `docker compose` zeigen die Standardwerte auf `host.docker.internal` (den Ho
 | POST | `/api/recording/stop` | Aufnahme stoppen, Pipeline starten |
 | POST | `/api/process` | Audio-Datei hochladen und verarbeiten |
 | GET | `/api/recording/{session_id}/status` | Verarbeitungsfortschritt abfragen |
+| GET | `/api/results` | Alle Ergebnisse auflisten (neueste zuerst) |
+| GET | `/api/results/search?q=...` | Ergebnisse durchsuchen |
 | GET | `/api/results/{id}` | Ergebnis abrufen |
-| PUT | `/api/results/{id}` | Zusammenfassung bearbeiten |
+| PUT | `/api/results/{id}` | Zusammenfassung / korrigiertes Transkript bearbeiten |
+| DELETE | `/api/results/{id}` | Ergebnis inkl. Audio-Datei loeschen |
+| GET | `/api/results/{id}/pdf` | Ergebnis als PDF herunterladen |
+| POST | `/api/chat` | Chat mit dem Assistenten (Server-Sent Events) |
+
+`/api/recording/stop` und `/api/process` akzeptieren optional das Formularfeld `doc_type` (`befund` oder `verlauf`, Standard `befund`).
 
 ## Projektstruktur
 
@@ -122,11 +147,14 @@ physioAI/
 │       └── services/         # API-Client
 ├── backend/
 │   ├── app.py                # FastAPI App + Routen
-│   ├── services/             # Whisper, LLM, Storage
+│   ├── services/             # Whisper, LLM, Chat, PDF, Storage
 │   ├── mock_services/        # Fake-Services fuer Offline-Dev
-│   ├── prompts.py            # Korrektur- und Zusammenfassungs-Prompts
+│   ├── prompts.py            # Korrektur-, Zusammenfassungs- (Befund/Verlauf) und Chat-Prompts
 │   └── tests/
-└── docs/                     # Specs und Plaene
+├── docs/                     # Specs und Plaene
+├── Dockerfile
+├── docker-compose.yml
+└── .env.example
 ```
 
 ## Lizenz
