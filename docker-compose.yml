@@ -8,12 +8,14 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - WHISPER_API_URL=http://192.168.178.73:8100
-      - OLLAMA_API_URL=http://192.168.178.73:11434
+      - WHISPER_API_URL=${WHISPER_API_URL:-http://host.docker.internal:8100}
+      - OLLAMA_API_URL=${OLLAMA_API_URL:-http://host.docker.internal:11434}
       - LLM_MODEL=qwen3.5:9b
       - UPLOAD_DIR=/app/uploads
       - DATA_DIR=/app/data
       - USE_MOCKS=false
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - physiodoc-uploads:/app/uploads
       - physiodoc-data:/app/data

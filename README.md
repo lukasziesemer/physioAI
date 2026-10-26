@@ -89,12 +89,14 @@ pytest tests/ -v
 
 | Variable | Beschreibung | Standard |
 |---|---|---|
-| `WHISPER_API_URL` | Faster-Whisper Server URL | `http://192.168.178.73:8100` |
-| `OLLAMA_API_URL` | Ollama Server URL | `http://192.168.178.73:11434` |
+| `WHISPER_API_URL` | Faster-Whisper Server URL | `http://localhost:8100` |
+| `OLLAMA_API_URL` | Ollama Server URL | `http://localhost:11434` |
 | `LLM_MODEL` | Ollama Modell | `qwen3.5:9b` |
 | `UPLOAD_DIR` | Pfad fuer Audio-Uploads | `./uploads` |
 | `DATA_DIR` | Pfad fuer Ergebnis-JSON | `./data` |
 | `USE_MOCKS` | Mock-Services aktivieren | `false` |
+
+Mit `docker compose` zeigen die Standardwerte auf `host.docker.internal` (den Host-Rechner). Laufen Whisper oder Ollama auf einem anderen Rechner, die URLs in der `.env` neben `docker-compose.yml` setzen.
 
 ## API-Endpunkte
 
