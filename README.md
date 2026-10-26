@@ -34,7 +34,7 @@ Fuer die Entwicklung ohne externe Services: `USE_MOCKS=true` in `.env` setzen.
 
 ```bash
 # Repository klonen
-git clone https://github.com/jukkler/physioAI.git
+git clone https://github.com/lukasziesemer/physioAI.git
 cd physioAI
 
 # Umgebungsvariablen konfigurieren
